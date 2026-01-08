@@ -1,0 +1,34 @@
+{
+  "tests": [
+    {
+      "name": "Convert PNG to JPG",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "file": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+        "format": "JPG",
+        "filename": "test.png"
+      },
+      "expectedStatus": 200,
+      "expectedBody": {
+        "file": "string",
+        "filename": "test.jpg",
+        "format": "JPG"
+      },
+      "bodyMatcher": "partial"
+    },
+    {
+      "name": "Missing format error",
+      "method": "POST",
+      "path": "/",
+      "body": {
+        "file": "base64data"
+      },
+      "expectedStatus": 400,
+      "expectedBody": {
+        "error": "string"
+      },
+      "bodyMatcher": "partial"
+    }
+  ]
+}

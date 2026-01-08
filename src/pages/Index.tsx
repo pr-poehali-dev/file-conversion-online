@@ -55,7 +55,7 @@ export default function Index() {
     }
   };
 
-  const handleConvert = () => {
+  const handleConvert = async () => {
     if (!file || !targetFormat) {
       toast({
         title: 'Ошибка',
@@ -69,39 +69,75 @@ export default function Index() {
     setProgress(0);
     setConvertedFile(null);
 
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setConverting(false);
-          setConvertedFile(file.name.replace(/\.[^.]+$/, `.${targetFormat.toLowerCase()}`));
-          toast({
-            title: 'Готово!',
-            description: `Файл успешно конвертирован в ${targetFormat}`,
-          });
-          return 100;
+    try {
+      // Читаем файл как base64
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      
+      reader.onload = async () => {
+        setProgress(30);
+        
+        const base64Data = reader.result as string;
+        
+        // Отправляем на backend
+        const response = await fetch('https://functions.poehali.dev/4aa9d50d-f365-4c9b-bfb8-53e92cccf4b5', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            file: base64Data,
+            format: targetFormat,
+            filename: file.name
+          })
+        });
+
+        setProgress(70);
+
+        if (!response.ok) {
+          throw new Error('Ошибка конвертации');
         }
-        return prev + 10;
+
+        const data = await response.json();
+        setProgress(100);
+        setConverting(false);
+        setConvertedFile(data.filename);
+        
+        // Сохраняем конвертированный файл
+        const link = document.createElement('a');
+        link.href = data.file;
+        link.download = data.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        toast({
+          title: 'Готово!',
+          description: `Файл успешно конвертирован в ${targetFormat}`,
+        });
+      };
+
+      reader.onerror = () => {
+        throw new Error('Ошибка чтения файла');
+      };
+
+    } catch (error) {
+      setConverting(false);
+      setProgress(0);
+      toast({
+        title: 'Ошибка',
+        description: error instanceof Error ? error.message : 'Не удалось конвертировать файл',
+        variant: 'destructive',
       });
-    }, 200);
+    }
   };
 
   const handleDownload = () => {
-    if (!file || !convertedFile) return;
-    
-    const blob = new Blob([file], { type: 'application/octet-stream' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = convertedFile;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    if (!convertedFile) return;
     
     toast({
-      title: 'Скачивание началось',
-      description: convertedFile,
+      title: 'Файл готов',
+      description: `${convertedFile} уже скачан`,
     });
   };
 
@@ -227,17 +263,7 @@ export default function Index() {
                   )}
                 </Button>
 
-                {convertedFile && !converting && (
-                  <Button
-                    onClick={handleDownload}
-                    className="w-full animate-fade-in"
-                    size="lg"
-                    variant="default"
-                  >
-                    <Icon name="Download" size={20} className="mr-2" />
-                    Скачать {convertedFile}
-                  </Button>
-                )}
+
               </div>
             )}
           </Card>
