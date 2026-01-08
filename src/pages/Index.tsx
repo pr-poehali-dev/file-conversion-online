@@ -19,6 +19,7 @@ export default function Index() {
   const [converting, setConverting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [convertedFile, setConvertedFile] = useState<string | null>(null);
   const { toast } = useToast();
 
   const handleDragOver = (e: React.DragEvent) => {
