@@ -67,12 +67,14 @@ export default function Index() {
 
     setConverting(true);
     setProgress(0);
+    setConvertedFile(null);
 
     const interval = setInterval(() => {
       setProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
           setConverting(false);
+          setConvertedFile(file.name.replace(/\.[^.]+$/, `.${targetFormat.toLowerCase()}`));
           toast({
             title: 'Готово!',
             description: `Файл успешно конвертирован в ${targetFormat}`,
@@ -82,6 +84,25 @@ export default function Index() {
         return prev + 10;
       });
     }, 200);
+  };
+
+  const handleDownload = () => {
+    if (!file || !convertedFile) return;
+    
+    const blob = new Blob([file], { type: 'application/octet-stream' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = convertedFile;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    toast({
+      title: 'Скачивание началось',
+      description: convertedFile,
+    });
   };
 
   return (
@@ -205,6 +226,18 @@ export default function Index() {
                     </>
                   )}
                 </Button>
+
+                {convertedFile && !converting && (
+                  <Button
+                    onClick={handleDownload}
+                    className="w-full animate-fade-in"
+                    size="lg"
+                    variant="default"
+                  >
+                    <Icon name="Download" size={20} className="mr-2" />
+                    Скачать {convertedFile}
+                  </Button>
+                )}
               </div>
             )}
           </Card>
